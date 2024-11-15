@@ -1,5 +1,5 @@
 import { FaceMesh } from "@mediapipe/face_mesh";
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import * as Facemesh from "@mediapipe/face_mesh";
 import * as cam from "@mediapipe/camera_utils";
 import Webcam from "react-webcam";
@@ -13,65 +13,71 @@ function App() {
   const eyeFilter = new Image();
   eyeFilter.src = eyeFilterImage;
 
-  function getEyeCenter(eyeLandmarks) {
+  // Helper function to calculate the center of the eye based on landmarks
+  const getEyeCenter = (eyeLandmarks) => {
     const eyeX = eyeLandmarks.reduce((sum, landmark) => sum + landmark.x, 0) / eyeLandmarks.length;
     const eyeY = eyeLandmarks.reduce((sum, landmark) => sum + landmark.y, 0) / eyeLandmarks.length;
     return { x: eyeX, y: eyeY };
-  }
+  };
 
-  function getEyeSize(eyeLandmarks) {
+  // Helper function to calculate eye size based on distance between landmarks
+  const getEyeSize = (eyeLandmarks) => {
     const width = Math.sqrt(
       Math.pow(eyeLandmarks[3].x - eyeLandmarks[0].x, 2) +
       Math.pow(eyeLandmarks[3].y - eyeLandmarks[0].y, 2)
     );
     return width * canvasRef.current.width; // Scale it to canvas width
-  }
+  };
 
-  function onResults(results) {
-    const videoWidth = webcamRef.current.video.videoWidth;
-    const videoHeight = webcamRef.current.video.videoHeight;
+  // Memoize onResults to avoid unnecessary re-creation
+  const onResults = useCallback(
+    (results) => {
+      const videoWidth = webcamRef.current.video.videoWidth;
+      const videoHeight = webcamRef.current.video.videoHeight;
 
-    canvasRef.current.width = videoWidth;
-    canvasRef.current.height = videoHeight;
+      canvasRef.current.width = videoWidth;
+      canvasRef.current.height = videoHeight;
 
-    const canvasElement = canvasRef.current;
-    const canvasCtx = canvasElement.getContext("2d");
-    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+      const canvasElement = canvasRef.current;
+      const canvasCtx = canvasElement.getContext("2d");
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-    if (results.multiFaceLandmarks) {
-      for (const landmarks of results.multiFaceLandmarks) {
-        const leftEyeLandmarks = Facemesh.FACEMESH_LEFT_EYE.map((index) => landmarks[index[0]]);
-        const rightEyeLandmarks = Facemesh.FACEMESH_RIGHT_EYE.map((index) => landmarks[index[0]]);
-        const leftEyeCenter = getEyeCenter(leftEyeLandmarks);
-        const rightEyeCenter = getEyeCenter(rightEyeLandmarks);
-        const leftEyeSize = getEyeSize(leftEyeLandmarks);
-        const rightEyeSize = getEyeSize(rightEyeLandmarks);
+      if (results.multiFaceLandmarks) {
+        for (const landmarks of results.multiFaceLandmarks) {
+          const leftEyeLandmarks = Facemesh.FACEMESH_LEFT_EYE.map((index) => landmarks[index[0]]);
+          const rightEyeLandmarks = Facemesh.FACEMESH_RIGHT_EYE.map((index) => landmarks[index[0]]);
+          const leftEyeCenter = getEyeCenter(leftEyeLandmarks);
+          const rightEyeCenter = getEyeCenter(rightEyeLandmarks);
+          const leftEyeSize = getEyeSize(leftEyeLandmarks);
+          const rightEyeSize = getEyeSize(rightEyeLandmarks);
 
-        canvasCtx.globalAlpha = 0.8;
-        canvasCtx.filter = "blur(1px)";
+          canvasCtx.globalAlpha = 0.8;
+          canvasCtx.filter = "blur(1px)";
 
-        canvasCtx.drawImage(
-          eyeFilter,
-          leftEyeCenter.x * canvasElement.width - leftEyeSize / 2,
-          leftEyeCenter.y * canvasElement.height - leftEyeSize / 2,
-          leftEyeSize,
-          leftEyeSize
-        );
+          canvasCtx.drawImage(
+            eyeFilter,
+            leftEyeCenter.x * canvasElement.width - leftEyeSize / 2,
+            leftEyeCenter.y * canvasElement.height - leftEyeSize / 2,
+            leftEyeSize,
+            leftEyeSize
+          );
 
-        canvasCtx.drawImage(
-          eyeFilter,
-          rightEyeCenter.x * canvasElement.width - rightEyeSize / 2,
-          rightEyeCenter.y * canvasElement.height - rightEyeSize / 2,
-          rightEyeSize,
-          rightEyeSize
-        );
+          canvasCtx.drawImage(
+            eyeFilter,
+            rightEyeCenter.x * canvasElement.width - rightEyeSize / 2,
+            rightEyeCenter.y * canvasElement.height - rightEyeSize / 2,
+            rightEyeSize,
+            rightEyeSize
+          );
 
-        canvasCtx.globalAlpha = 1;
-        canvasCtx.filter = "none";
+          canvasCtx.globalAlpha = 1;
+          canvasCtx.filter = "none";
+        }
       }
-    }
-  }
+    },
+    [webcamRef, canvasRef, eyeFilter]
+  );
 
   useEffect(() => {
     const faceMesh = new FaceMesh({
@@ -96,7 +102,7 @@ function App() {
       });
       camera.current.start();
     }
-  }, []);
+  }, [onResults]); // Add onResults as a dependency
 
   return (
     <div className="app-container">
