@@ -1,5 +1,5 @@
 import { FaceMesh } from "@mediapipe/face_mesh";
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import * as Facemesh from "@mediapipe/face_mesh";
 import * as cam from "@mediapipe/camera_utils";
 import Webcam from "react-webcam";
@@ -10,8 +10,12 @@ function App() {
   const canvasRef = useRef(null);
   const camera = useRef(null); // Use useRef instead of let variable
 
-  const eyeFilter = new Image();
-  eyeFilter.src = eyeFilterImage;
+  // Memoize the eyeFilter initialization
+  const eyeFilter = useMemo(() => {
+    const img = new Image();
+    img.src = eyeFilterImage;
+    return img;
+  }, []);
 
   // Helper function to calculate the center of the eye based on landmarks
   const getEyeCenter = (eyeLandmarks) => {
@@ -76,7 +80,7 @@ function App() {
         }
       }
     },
-    [webcamRef, canvasRef, eyeFilter]
+    [eyeFilter, webcamRef, canvasRef]
   );
 
   useEffect(() => {
