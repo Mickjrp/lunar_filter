@@ -10,7 +10,7 @@ import './App.css';
 function App() {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
-  let camera = null;
+  let camera = useRef(null);
 
   const eyeFilter = new Image();
   eyeFilter.src = eyeFilterImage;
@@ -110,7 +110,7 @@ function App() {
         width: 640,
         height: 480,
       });
-      camera.start();
+      camera.current.start();
     }
   }, []);
 
