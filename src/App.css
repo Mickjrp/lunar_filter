@@ -1,16 +1,8 @@
-/* Apply a background color to the entire viewport */
 body, html, #root {
-  background-color: #282c34; /* Replace with your desired background color */
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-}
-
-.app-container {
+  overflow: hidden; /* Prevent scrolling */
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
 }

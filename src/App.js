@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import * as Facemesh from "@mediapipe/face_mesh";
 import * as cam from "@mediapipe/camera_utils";
 import Webcam from "react-webcam";
+import './App.css';
 import eyeFilterImage from "./star.png"; // Replace with your PNG path
 
 function App() {
@@ -114,14 +115,12 @@ function App() {
         ref={webcamRef}
         style={{
           position: "absolute",
-          marginLeft: "auto",
-          marginRight: "auto",
+          top: 0,
           left: 0,
-          right: 0,
-          textAlign: "center",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover", // Ensures the video fills the screen while preserving the aspect ratio
           zIndex: 9,
-          width: 640,
-          height: 480,
           transform: "scaleX(-1)", // Flip the canvas horizontally
         }}
       />
@@ -129,14 +128,12 @@ function App() {
         ref={canvasRef}
         style={{
           position: "absolute",
-          marginLeft: "auto",
-          marginRight: "auto",
+          top: 0,
           left: 0,
-          right: 0,
-          textAlign: "center",
-          zIndex: 9,
-          width: 640,
-          height: 480,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover", // Match the canvas size with the video
+          zIndex: 10,
           transform: "scaleX(-1)", // Flip the canvas horizontally
         }}
       ></canvas>
