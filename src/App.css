@@ -6,3 +6,46 @@ body, html, #root {
   overflow: hidden; /* Prevent scrolling */
   display: flex;
 }
+
+.app-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 10px solid white; /* Adds a white border */
+  box-sizing: border-box; /* Ensures border is included in the dimensions */
+}
+
+.filter-buttons {
+  position: absolute;
+  top: 50%; /* Center vertically */
+  right: 20px; /* Position closer to the right edge */
+  transform: translateY(-50%); /* Adjust for vertical centering */
+  display: flex;
+  flex-direction: column; /* Stack buttons vertically */
+  gap: 10px; /* Add space between buttons */
+  z-index: 11; /* Ensure buttons are in front of the camera */
+}
+
+.filter-button-image {
+  width: 40px; /* Smaller size for the button */
+  height: 40px; /* Smaller size for the button */
+  cursor: pointer;
+  border: 2px solid transparent; /* Transparent border for hover effect */
+  border-radius: 50%; /* Optional: circular buttons */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add subtle shadow */
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.filter-button-image:hover {
+  transform: scale(1.1); /* Slightly enlarge on hover */
+  border-color: white; /* Highlight on hover */
+}
+
+.filter-button-image:active {
+  transform: scale(1); /* Reset size on click */
+  border-color: black; /* Highlight on active click */
+}
+

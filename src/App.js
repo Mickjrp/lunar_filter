@@ -1,40 +1,42 @@
 import { FaceMesh } from "@mediapipe/face_mesh";
-import React, { useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useRef, useEffect, useCallback, useMemo, useState } from "react";
 import * as Facemesh from "@mediapipe/face_mesh";
 import * as cam from "@mediapipe/camera_utils";
 import Webcam from "react-webcam";
-import './App.css';
-import eyeFilterImage from "./star.png"; // Replace with your PNG path
+import "./App.css";
+import eyeFilterImage1 from "./star.png"; // Replace with your first PNG path
+import eyeFilterImage2 from "./heart.png"; // Replace with your second PNG path
+import eyeFilterImage3 from "./moon.png"; // Replace with your third PNG path
 
 function App() {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
-  const camera = useRef(null); // Use useRef instead of let variable
+  const camera = useRef(null);
+
+  // State to manage the current filter
+  const [currentFilter, setCurrentFilter] = useState(eyeFilterImage1);
 
   // Memoize the eyeFilter initialization
   const eyeFilter = useMemo(() => {
     const img = new Image();
-    img.src = eyeFilterImage;
+    img.src = currentFilter;
     return img;
-  }, []);
+  }, [currentFilter]);
 
-  // Helper function to calculate the center of the eye based on landmarks
   const getEyeCenter = (eyeLandmarks) => {
     const eyeX = eyeLandmarks.reduce((sum, landmark) => sum + landmark.x, 0) / eyeLandmarks.length;
     const eyeY = eyeLandmarks.reduce((sum, landmark) => sum + landmark.y, 0) / eyeLandmarks.length;
     return { x: eyeX, y: eyeY };
   };
 
-  // Helper function to calculate eye size based on distance between landmarks
   const getEyeSize = (eyeLandmarks) => {
     const width = Math.sqrt(
       Math.pow(eyeLandmarks[3].x - eyeLandmarks[0].x, 2) +
       Math.pow(eyeLandmarks[3].y - eyeLandmarks[0].y, 2)
     );
-    return width * canvasRef.current.width; // Scale it to canvas width
+    return width * canvasRef.current.width;
   };
 
-  // Memoize onResults to avoid unnecessary re-creation
   const onResults = useCallback(
     (results) => {
       const videoWidth = webcamRef.current.video.videoWidth;
@@ -107,7 +109,7 @@ function App() {
       });
       camera.current.start();
     }
-  }, [onResults]); // Add onResults as a dependency
+  }, [onResults]);
 
   return (
     <div className="app-container">
@@ -119,9 +121,9 @@ function App() {
           left: 0,
           width: "100%",
           height: "100%",
-          objectFit: "cover", // Ensures the video fills the screen while preserving the aspect ratio
+          objectFit: "cover",
           zIndex: 9,
-          transform: "scaleX(-1)", // Flip the canvas horizontally
+          transform: "scaleX(-1)",
         }}
       />
       <canvas
@@ -132,11 +134,31 @@ function App() {
           left: 0,
           width: "100%",
           height: "100%",
-          objectFit: "cover", // Match the canvas size with the video
+          objectFit: "cover",
           zIndex: 10,
-          transform: "scaleX(-1)", // Flip the canvas horizontally
+          transform: "scaleX(-1)",
         }}
       ></canvas>
+        <div className="filter-buttons">
+          <img
+            src={eyeFilterImage1}
+            alt="Star Filter"
+            onClick={() => setCurrentFilter(eyeFilterImage1)}
+            className="filter-button-image"
+          />
+          <img
+            src={eyeFilterImage2}
+            alt="Heart Filter"
+            onClick={() => setCurrentFilter(eyeFilterImage2)}
+            className="filter-button-image"
+          />
+          <img
+            src={eyeFilterImage3}
+            alt="Circle Filter"
+            onClick={() => setCurrentFilter(eyeFilterImage3)}
+            className="filter-button-image"
+          />
+        </div>
     </div>
   );
 }
