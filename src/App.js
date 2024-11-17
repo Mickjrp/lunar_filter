@@ -1,12 +1,11 @@
 import { FaceMesh } from "@mediapipe/face_mesh";
 import React, { useRef, useEffect, useCallback, useMemo, useState } from "react";
-import * as Facemesh from "@mediapipe/face_mesh";
 import * as cam from "@mediapipe/camera_utils";
 import Webcam from "react-webcam";
 import "./App.css";
-import eyeFilterImage1 from "./star.png"; // Replace with your first PNG path
-import eyeFilterImage2 from "./heart.png"; // Replace with your second PNG path
-import eyeFilterImage3 from "./moon.png"; // Replace with your third PNG path
+import eyeFilterImage1 from "./gray.png";
+import eyeFilterImage2 from "./dark_brown.png";
+import eyeFilterImage3 from "./brown.png";
 
 function App() {
   const webcamRef = useRef(null);
@@ -16,26 +15,15 @@ function App() {
   // State to manage the current filter
   const [currentFilter, setCurrentFilter] = useState(eyeFilterImage1);
 
+  // State to manage opacity
+  const [opacity, setOpacity] = useState(0.8); // Default opacity
+
   // Memoize the eyeFilter initialization
   const eyeFilter = useMemo(() => {
     const img = new Image();
     img.src = currentFilter;
     return img;
   }, [currentFilter]);
-
-  const getEyeCenter = (eyeLandmarks) => {
-    const eyeX = eyeLandmarks.reduce((sum, landmark) => sum + landmark.x, 0) / eyeLandmarks.length;
-    const eyeY = eyeLandmarks.reduce((sum, landmark) => sum + landmark.y, 0) / eyeLandmarks.length;
-    return { x: eyeX, y: eyeY };
-  };
-
-  const getEyeSize = (eyeLandmarks) => {
-    const width = Math.sqrt(
-      Math.pow(eyeLandmarks[3].x - eyeLandmarks[0].x, 2) +
-      Math.pow(eyeLandmarks[3].y - eyeLandmarks[0].y, 2)
-    );
-    return width * canvasRef.current.width;
-  };
 
   const onResults = useCallback(
     (results) => {
@@ -52,30 +40,51 @@ function App() {
 
       if (results.multiFaceLandmarks) {
         for (const landmarks of results.multiFaceLandmarks) {
-          const leftEyeLandmarks = Facemesh.FACEMESH_LEFT_EYE.map((index) => landmarks[index[0]]);
-          const rightEyeLandmarks = Facemesh.FACEMESH_RIGHT_EYE.map((index) => landmarks[index[0]]);
-          const leftEyeCenter = getEyeCenter(leftEyeLandmarks);
-          const rightEyeCenter = getEyeCenter(rightEyeLandmarks);
-          const leftEyeSize = getEyeSize(leftEyeLandmarks);
-          const rightEyeSize = getEyeSize(rightEyeLandmarks);
+          // Pupil landmarks
+          const leftPupil = landmarks[468];
+          const rightPupil = landmarks[473];
 
-          canvasCtx.globalAlpha = 0.8;
+          // Calculate dynamic filter size based on the iris' width
+          const leftIrisSize =
+            Math.sqrt(
+              Math.pow(landmarks[468].x - landmarks[469].x, 2) +
+                Math.pow(landmarks[468].y - landmarks[469].y, 2)
+            ) *
+            canvasElement.width *
+            2;
+
+          const rightIrisSize =
+            Math.sqrt(
+              Math.pow(landmarks[473].x - landmarks[474].x, 2) +
+                Math.pow(landmarks[473].y - landmarks[474].y, 2)
+            ) *
+            canvasElement.width *
+            2;
+
+          // Pupil positions
+          const leftX = leftPupil.x * canvasElement.width;
+          const leftY = leftPupil.y * canvasElement.height;
+          const rightX = rightPupil.x * canvasElement.width;
+          const rightY = rightPupil.y * canvasElement.height;
+
+          // Draw the lens filters with dynamic sizing
+          canvasCtx.globalAlpha = opacity; // Use state-controlled opacity
           canvasCtx.filter = "blur(1px)";
 
           canvasCtx.drawImage(
             eyeFilter,
-            leftEyeCenter.x * canvasElement.width - leftEyeSize / 2,
-            leftEyeCenter.y * canvasElement.height - leftEyeSize / 2,
-            leftEyeSize,
-            leftEyeSize
+            leftX - leftIrisSize / 2,
+            leftY - leftIrisSize / 2,
+            leftIrisSize,
+            leftIrisSize
           );
 
           canvasCtx.drawImage(
             eyeFilter,
-            rightEyeCenter.x * canvasElement.width - rightEyeSize / 2,
-            rightEyeCenter.y * canvasElement.height - rightEyeSize / 2,
-            rightEyeSize,
-            rightEyeSize
+            rightX - rightIrisSize / 2,
+            rightY - rightIrisSize / 2,
+            rightIrisSize,
+            rightIrisSize
           );
 
           canvasCtx.globalAlpha = 1;
@@ -83,22 +92,23 @@ function App() {
         }
       }
     },
-    [eyeFilter, webcamRef, canvasRef]
+    [eyeFilter, webcamRef, canvasRef, opacity]
   );
 
   useEffect(() => {
     const faceMesh = new FaceMesh({
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
     });
-
+  
     faceMesh.setOptions({
       maxNumFaces: 1,
+      refineLandmarks: true, // Enable iris tracking
       minDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5,
     });
-
+  
     faceMesh.onResults(onResults);
-
+  
     if (webcamRef.current) {
       camera.current = new cam.Camera(webcamRef.current.video, {
         onFrame: async () => {
@@ -110,6 +120,7 @@ function App() {
       camera.current.start();
     }
   }, [onResults]);
+  
 
   return (
     <div className="app-container">
@@ -139,26 +150,54 @@ function App() {
           transform: "scaleX(-1)",
         }}
       ></canvas>
-        <div className="filter-buttons">
-          <img
-            src={eyeFilterImage1}
-            alt="Star Filter"
-            onClick={() => setCurrentFilter(eyeFilterImage1)}
-            className="filter-button-image"
-          />
-          <img
-            src={eyeFilterImage2}
-            alt="Heart Filter"
-            onClick={() => setCurrentFilter(eyeFilterImage2)}
-            className="filter-button-image"
-          />
-          <img
-            src={eyeFilterImage3}
-            alt="Circle Filter"
-            onClick={() => setCurrentFilter(eyeFilterImage3)}
-            className="filter-button-image"
-          />
-        </div>
+      <div className="filter-buttons">
+        <img
+          src={eyeFilterImage1}
+          alt="Gray Lens"
+          onClick={() => setCurrentFilter(eyeFilterImage1)}
+          className="filter-button-image"
+        />
+        <img
+          src={eyeFilterImage2}
+          alt="Dark Brown Lens"
+          onClick={() => setCurrentFilter(eyeFilterImage2)}
+          className="filter-button-image"
+        />
+        <img
+          src={eyeFilterImage3}
+          alt="Brown Lens"
+          onClick={() => setCurrentFilter(eyeFilterImage3)}
+          className="filter-button-image"
+        />
+      </div>
+      {/* Slider for opacity control */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "20px",
+          transform: "translateY(-50%)",
+          zIndex: 11,
+          background: "rgba(255, 255, 255, 0.8)",
+          padding: "10px",
+          borderRadius: "10px",
+          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
+        }}
+      >
+        <label htmlFor="opacity-slider" style={{ fontSize: "12px", marginBottom: "5px", display: "block" }}>
+          Opacity
+        </label>
+        <input
+          id="opacity-slider"
+          type="range"
+          min="0"
+          max="1"
+          step="0.1"
+          value={opacity}
+          onChange={(e) => setOpacity(Number(e.target.value))}
+          style={{ width: "100px" }}
+        />
+      </div>
     </div>
   );
 }
