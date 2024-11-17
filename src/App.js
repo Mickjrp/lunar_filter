@@ -16,7 +16,7 @@ function App() {
   const [currentFilter, setCurrentFilter] = useState(eyeFilterImage1);
 
   // State to manage opacity
-  const [opacity, setOpacity] = useState(0.8); // Default opacity
+  const [opacity, setOpacity] = useState(0.4); // Default opacity
 
   // Memoize the eyeFilter initialization
   const eyeFilter = useMemo(() => {
@@ -51,7 +51,7 @@ function App() {
                 Math.pow(landmarks[468].y - landmarks[469].y, 2)
             ) *
             canvasElement.width *
-            2;
+            2.4;
 
           const rightIrisSize =
             Math.sqrt(
@@ -59,7 +59,7 @@ function App() {
                 Math.pow(landmarks[473].y - landmarks[474].y, 2)
             ) *
             canvasElement.width *
-            2;
+            2.4;
 
           // Pupil positions
           const leftX = leftPupil.x * canvasElement.width;
