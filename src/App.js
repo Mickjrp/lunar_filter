@@ -15,6 +15,7 @@ function App() {
   // State to manage the current filter and opacity
   const [currentFilter, setCurrentFilter] = useState(grayFilter);
   const [opacity, setOpacity] = useState(0.4); // Default opacity
+  const opacityRef = useRef(0.4); // Real-time opacity reference for smoother updates
 
   // Memoized image object for the filter
   const eyeFilter = useMemo(() => {
@@ -22,6 +23,13 @@ function App() {
     img.src = currentFilter;
     return img;
   }, [currentFilter]);
+
+  // Debounced function for opacity update
+  const handleOpacityChange = (e) => {
+    const newOpacity = Number(e.target.value);
+    opacityRef.current = newOpacity; // Update reference immediately
+    setOpacity(newOpacity); // Debounced update for re-render
+  };
 
   const onResults = useCallback(
     (results) => {
@@ -66,7 +74,7 @@ function App() {
           const rightY = rightPupil.y * canvasElement.height;
 
           // Draw filters
-          canvasCtx.globalAlpha = opacity;
+          canvasCtx.globalAlpha = opacityRef.current; // Use reference for real-time updates
           canvasCtx.filter = "blur(1px)";
 
           canvasCtx.drawImage(
@@ -90,7 +98,7 @@ function App() {
         }
       }
     },
-    [eyeFilter, opacity]
+    [eyeFilter]
   );
 
   useEffect(() => {
@@ -180,7 +188,7 @@ function App() {
           max="1"
           step="0.1"
           value={opacity}
-          onChange={(e) => setOpacity(Number(e.target.value))}
+          onChange={handleOpacityChange}
         />
       </div>
     </div>
