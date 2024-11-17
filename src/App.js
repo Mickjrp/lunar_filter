@@ -3,22 +3,20 @@ import React, { useRef, useEffect, useCallback, useMemo, useState } from "react"
 import * as cam from "@mediapipe/camera_utils";
 import Webcam from "react-webcam";
 import "./App.css";
-import eyeFilterImage1 from "./gray.png";
-import eyeFilterImage2 from "./dark_brown.png";
-import eyeFilterImage3 from "./brown.png";
+import grayFilter from "./assets/gray.png";
+import darkBrownFilter from "./assets/dark_brown.png";
+import brownFilter from "./assets/brown.png";
 
 function App() {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
   const camera = useRef(null);
 
-  // State to manage the current filter
-  const [currentFilter, setCurrentFilter] = useState(eyeFilterImage1);
-
-  // State to manage opacity
+  // State to manage the current filter and opacity
+  const [currentFilter, setCurrentFilter] = useState(grayFilter);
   const [opacity, setOpacity] = useState(0.4); // Default opacity
 
-  // Memoize the eyeFilter initialization
+  // Memoized image object for the filter
   const eyeFilter = useMemo(() => {
     const img = new Image();
     img.src = currentFilter;
@@ -44,7 +42,7 @@ function App() {
           const leftPupil = landmarks[468];
           const rightPupil = landmarks[473];
 
-          // Calculate dynamic filter size based on the iris' width
+          // Calculate filter size dynamically
           const leftIrisSize =
             Math.sqrt(
               Math.pow(landmarks[468].x - landmarks[469].x, 2) +
@@ -67,8 +65,8 @@ function App() {
           const rightX = rightPupil.x * canvasElement.width;
           const rightY = rightPupil.y * canvasElement.height;
 
-          // Draw the lens filters with dynamic sizing
-          canvasCtx.globalAlpha = opacity; // Use state-controlled opacity
+          // Draw filters
+          canvasCtx.globalAlpha = opacity;
           canvasCtx.filter = "blur(1px)";
 
           canvasCtx.drawImage(
@@ -92,23 +90,23 @@ function App() {
         }
       }
     },
-    [eyeFilter, webcamRef, canvasRef, opacity]
+    [eyeFilter, opacity]
   );
 
   useEffect(() => {
     const faceMesh = new FaceMesh({
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
     });
-  
+
     faceMesh.setOptions({
       maxNumFaces: 1,
-      refineLandmarks: true, // Enable iris tracking
+      refineLandmarks: true,
       minDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5,
     });
-  
+
     faceMesh.onResults(onResults);
-  
+
     if (webcamRef.current) {
       camera.current = new cam.Camera(webcamRef.current.video, {
         onFrame: async () => {
@@ -120,7 +118,6 @@ function App() {
       camera.current.start();
     }
   }, [onResults]);
-  
 
   return (
     <div className="app-container">
@@ -150,43 +147,32 @@ function App() {
           transform: "scaleX(-1)",
         }}
       ></canvas>
+
+      {/* Filter Buttons */}
       <div className="filter-buttons">
         <img
-          src={eyeFilterImage1}
+          src={grayFilter}
           alt="Gray Lens"
-          onClick={() => setCurrentFilter(eyeFilterImage1)}
+          onClick={() => setCurrentFilter(grayFilter)}
           className="filter-button-image"
         />
         <img
-          src={eyeFilterImage2}
+          src={darkBrownFilter}
           alt="Dark Brown Lens"
-          onClick={() => setCurrentFilter(eyeFilterImage2)}
+          onClick={() => setCurrentFilter(darkBrownFilter)}
           className="filter-button-image"
         />
         <img
-          src={eyeFilterImage3}
+          src={brownFilter}
           alt="Brown Lens"
-          onClick={() => setCurrentFilter(eyeFilterImage3)}
+          onClick={() => setCurrentFilter(brownFilter)}
           className="filter-button-image"
         />
       </div>
-      {/* Slider for opacity control */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "20px",
-          transform: "translateY(-50%)",
-          zIndex: 11,
-          background: "rgba(255, 255, 255, 0.8)",
-          padding: "10px",
-          borderRadius: "10px",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-        }}
-      >
-        <label htmlFor="opacity-slider" style={{ fontSize: "12px", marginBottom: "5px", display: "block" }}>
-          Opacity
-        </label>
+
+      {/* Opacity Slider */}
+      <div className="slider-container">
+        <label htmlFor="opacity-slider">Opacity</label>
         <input
           id="opacity-slider"
           type="range"
@@ -195,7 +181,6 @@ function App() {
           step="0.1"
           value={opacity}
           onChange={(e) => setOpacity(Number(e.target.value))}
-          style={{ width: "100px" }}
         />
       </div>
     </div>
