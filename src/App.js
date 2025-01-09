@@ -6,16 +6,26 @@ import "./App.css";
 import grayFilter from "./assets/gray.png";
 import darkBrownFilter from "./assets/dark_brown.png";
 import brownFilter from "./assets/brown.png";
+import debounce from "lodash.debounce";
 
 function App() {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
   const camera = useRef(null);
 
-  // State to manage the current filter, opacity
+  // State to manage the current filter and opacity
   const [currentFilter, setCurrentFilter] = useState(grayFilter);
   const [opacity, setOpacity] = useState(0.4); // Default opacity
   const opacityRef = useRef(0.4); // Real-time opacity reference for smoother updates
+
+  // Debounced filter change handler
+  const setFilterDebounced = useRef(
+    debounce((filter) => setCurrentFilter(filter), 200)
+  ).current;
+
+  const handleFilterChange = (filter) => {
+    setFilterDebounced(filter);
+  };
 
   const eyeFilter = useMemo(() => {
     const img = new Image();
@@ -40,11 +50,16 @@ function App() {
       const canvasElement = canvasRef.current;
       const canvasCtx = canvasElement.getContext("2d");
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(
+        results.image,
+        0,
+        0,
+        canvasElement.width,
+        canvasElement.height
+      );
 
       if (results.multiFaceLandmarks) {
         for (const landmarks of results.multiFaceLandmarks) {
-          // Pupil landmarks
           const leftPupil = landmarks[468];
           const rightPupil = landmarks[473];
 
@@ -94,17 +109,16 @@ function App() {
           canvasCtx.filter = "none";
 
           // Add realistic lip coloring
-          // Define upper and lower lip landmarks
-
           const upperLipLandmarks = [
-            61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 306, 308, 415, 310, 311, 312, 13, 82 ,81, 80, 191, 78, 62, 61  // Upper lip
+            61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 306, 308, 415, 310,
+            311, 312, 13, 82, 81, 80, 191, 78, 62, 61,
           ];
 
           const lowerLipLandmarks = [
-            61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 78, 62, 61 // Lower lip
+            61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308, 324, 318,
+            402, 317, 14, 87, 178, 88, 95, 78, 62, 61,
           ];
 
-          // Function to draw a section of the lip
           function drawLipSection(landmarks, indices, color) {
             canvasCtx.globalCompositeOperation = "multiply"; // Apply multiply blend mode
             canvasCtx.beginPath();
@@ -125,7 +139,6 @@ function App() {
             canvasCtx.fill();
           }
 
-          // Draw upper and lower lips
           drawLipSection(
             landmarks,
             upperLipLandmarks,
@@ -144,7 +157,8 @@ function App() {
 
   useEffect(() => {
     const faceMesh = new FaceMesh({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+      locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
     });
 
     faceMesh.setOptions({
@@ -159,13 +173,24 @@ function App() {
     if (webcamRef.current) {
       camera.current = new cam.Camera(webcamRef.current.video, {
         onFrame: async () => {
-          await faceMesh.send({ image: webcamRef.current.video });
+          try {
+            await faceMesh.send({ image: webcamRef.current.video });
+          } catch (error) {
+            console.error("Error in faceMesh.send:", error);
+          }
         },
         width: 640,
         height: 480,
       });
       camera.current.start();
     }
+
+    return () => {
+      if (camera.current) {
+        camera.current.stop();
+      }
+      faceMesh.close();
+    };
   }, [onResults]);
 
   return (
@@ -201,19 +226,19 @@ function App() {
         <img
           src={grayFilter}
           alt="Gray Lens"
-          onClick={() => setCurrentFilter(grayFilter)}
+          onClick={() => handleFilterChange(grayFilter)}
           className="filter-button-image"
         />
         <img
           src={darkBrownFilter}
           alt="Dark Brown Lens"
-          onClick={() => setCurrentFilter(darkBrownFilter)}
+          onClick={() => handleFilterChange(darkBrownFilter)}
           className="filter-button-image"
         />
         <img
           src={brownFilter}
           alt="Brown Lens"
-          onClick={() => setCurrentFilter(brownFilter)}
+          onClick={() => handleFilterChange(brownFilter)}
           className="filter-button-image"
         />
       </div>
